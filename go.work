@@ -1,0 +1,7 @@
+go 1.21.4
+
+use (
+	./01hello
+	./02DatatypesVariables
+	./03userInput
+)
