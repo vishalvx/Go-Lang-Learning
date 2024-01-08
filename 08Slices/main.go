@@ -40,4 +40,11 @@ func main() {
 	sort.Strings(songList)
 	fmt.Println("After sorting: ", songList)
 	fmt.Println("Is Sorted: ", sort.StringsAreSorted(songList))
+
+	// remove an element from slice
+	var courseList = []string{"C", "C++", "Java", "Python", "Go", "C#"}
+	fmt.Println("Course List: ", courseList)
+	index := 4
+	courseList = append(courseList[:index], courseList[index+1:]...)
+	fmt.Println("Course List after removing element: ", courseList)
 }
