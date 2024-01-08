@@ -8,4 +8,5 @@ use (
 	./05time
 	./06pointers
 	./07array
+	./08Slices
 )
