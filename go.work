@@ -9,4 +9,5 @@ use (
 	./06pointers
 	./07array
 	./08Slices
+	./09myMap
 )
