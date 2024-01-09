@@ -10,4 +10,5 @@ use (
 	./07array
 	./08Slices
 	./09myMap
+	./10myStruct
 )
