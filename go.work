@@ -11,4 +11,5 @@ use (
 	./08Slices
 	./09myMap
 	./10myStruct
+	./11ConditionLoops
 )
