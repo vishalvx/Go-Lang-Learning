@@ -13,4 +13,6 @@ use (
 	./10myStruct
 	./11ConditionLoops
 	./12functions
+	./13methods
+	./14defer
 )
