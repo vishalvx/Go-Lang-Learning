@@ -8,6 +8,8 @@ import (
 func main() {
 	fmt.Println("JSONS")
 	EncodeJson()
+	fmt.Printf("\n\n")
+	DecodeJson()
 }
 
 // users struct for json
@@ -27,11 +29,47 @@ func EncodeJson() {
 
 	//package this data as JSON data
 
-	finalJson, error := json.MarshalIndent(users, ">", "\t")
+	finalJson, error := json.MarshalIndent(users, "", "\t")
 
 	if error != nil {
 		fmt.Println("Error : ", error)
 	}
 
 	fmt.Println("Final Json : ", string(finalJson))
+}
+
+func DecodeJson() {
+
+	fmt.Println("DECODEING JSON")
+
+	var jsonDataFromWeb = []byte(`
+	{
+		"name": "vishal",
+		"age": 20,
+		"skills": ["golang","sitecore"]
+	}
+	`)
+
+	isValidJson := json.Valid(jsonDataFromWeb)
+
+	if isValidJson {
+		fmt.Println("JSON is Valid!!")
+
+		var webUser user
+		json.Unmarshal(jsonDataFromWeb, &webUser)
+		fmt.Printf("web User : %#v \n", webUser)
+
+		// if we dont want to use the struct, we can use map[string]interface{}
+		var webUserMap map[string]interface{}
+		json.Unmarshal(jsonDataFromWeb, &webUserMap)
+		fmt.Printf("web User Map : %#v \n", webUserMap)
+
+		for k, v := range webUserMap {
+			fmt.Printf("Key : %v and Value : %v and Type is %T\n", k, v, v)
+		}
+
+	} else {
+		fmt.Println("JSON IS NOT VALID!!!")
+	}
+
 }
