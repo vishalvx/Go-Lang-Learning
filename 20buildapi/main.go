@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // Models
@@ -36,6 +38,23 @@ func getAllCourses(res http.ResponseWriter, req *http.Request) {
 	fmt.Println("INFO - Get All Course Route Hits ---")
 	res.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(res).Encode(courses)
+}
+
+func getOneCourse(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("INFO - Get One Course Endpoint Hit ---")
+	res.Header().Set("Content-Type", "application/json")
+	// get req params
+	param := mux.Vars(req)
+
+	// loop through course, find matching id and return single course
+	for _, course := range courses {
+		if course.CourseId == param["id"] {
+			json.NewEncoder(res).Encode(course)
+			return
+		}
+	}
+	json.NewEncoder(res).Encode("No Course found with this id!!")
+	return
 }
 
 func main() {
