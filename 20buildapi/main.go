@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -16,13 +16,17 @@ type Course struct {
 	CourseId    string  `json:"courseid"`
 	CourseName  string  `json:"coursename"`
 	CoursePrice int     `json:"price"`
-	Author      *Author `json:"Author"`
+	Author      *Author `json:"author"`
 }
 
 type Author struct {
 	Fullname string `json:"fulllname"`
 	Website  string `json:"website"`
 }
+
+// type CourseHandler struct {
+// 	http.Handler
+// }
 
 // fake DB
 var courses []Course
@@ -40,7 +44,7 @@ func serveHome(res http.ResponseWriter, req *http.Request) {
 }
 
 func getAllCourses(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("INFO - Get All Course Route Hits ---")
+	log.Print("INFO - Get All Course Route Hits ---")
 	res.Header().Set("Content-Type", "application/json")
 
 	res.WriteHeader(http.StatusOK)
@@ -49,7 +53,7 @@ func getAllCourses(res http.ResponseWriter, req *http.Request) {
 }
 
 func getOneCourse(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("INFO - Get One Course Endpoint Hit ---")
+	log.Print("INFO - Get One Course Endpoint Hit ---")
 	res.Header().Set("Content-Type", "application/json")
 	// get req params
 	param := mux.Vars(req)
@@ -67,7 +71,7 @@ func getOneCourse(res http.ResponseWriter, req *http.Request) {
 }
 
 func createCourse(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("INFO - Create Course Endpoint Hit ---")
+	log.Print("INFO - Create Course Endpoint Hit ---")
 	res.Header().Set("Content-Type", "application/json")
 
 	// Check : body is empty
@@ -80,7 +84,7 @@ func createCourse(res http.ResponseWriter, req *http.Request) {
 	var course Course
 	json.NewDecoder(req.Body).Decode(&course) // by passing pointer of course it will store decode data into course variable
 
-	// Check : body is {}
+	// Check : body is {} or course name is not provide
 	if course.IsEmpty() {
 		res.WriteHeader(http.StatusPartialContent)
 		json.NewEncoder(res).Encode("Provide required fields coursename")
@@ -95,6 +99,79 @@ func createCourse(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(course)
 }
 
+func updateOneCourse(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO - Update Course Endpoint Hit ---")
+	res.Header().Set("Content-Type", "application/json")
+
+	// Get Id from params
+	params := mux.Vars(req)
+
+	//loop through course find course
+	// add remove that found course and add update data with
+	for index, course := range courses {
+		if course.CourseId == params["id"] {
+			courses = append(courses[:index], courses[index+1:]...)
+			var course Course
+
+			// Case : body empty
+			if err := json.NewDecoder(req.Body).Decode(&course); err != nil {
+				res.WriteHeader(http.StatusNoContent)
+				json.NewEncoder(res).Encode("Please send some JSON data!")
+				return
+			}
+			course.CourseId = params["id"]
+
+			// add new course with same id
+			courses = append(courses, course)
+
+			res.WriteHeader(http.StatusOK)
+			json.NewEncoder(res).Encode(course)
+			return
+		}
+	}
+
+	// Case : id not found
+	res.WriteHeader(http.StatusNotFound)
+}
+
+func deleteOneCourse(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO - Delete One Course Endpoint Hit ---")
+	res.Header().Set("Content-Type", "application/json")
+
+	// Grab id of course
+	params := mux.Vars(req)
+
+	for index, course := range courses {
+		if course.CourseId == params["id"] {
+			courses = append(courses[:index], courses[index+1:]...)
+			res.WriteHeader(http.StatusOK)
+			json.NewEncoder(res).Encode("Course delete successfully!!")
+			return
+		}
+	}
+	// Case : id not found
+	res.WriteHeader(http.StatusNotFound)
+}
+
 func main() {
+	log.Print("SERVER --- Starting...")
+
+	// Creating Some Course
+	courses = append(courses, Course{CourseId: "1", CourseName: "Learn Go", CoursePrice: 200, Author: &Author{Fullname: "Vishal Prajapati", Website: "https://vishalvx.dev"}}, Course{CourseId: "2", CourseName: "Learn Mongo DB", CoursePrice: 250, Author: &Author{Fullname: "Vishal Prajapati", Website: "https://vishalvx.dev"}})
+
+	router := mux.NewRouter()
+	router.HandleFunc("/", serveHome).Methods("GET")
+	router.HandleFunc("/courses", getAllCourses).Methods("GET")
+	router.HandleFunc("/courses", createCourse).Methods("POST")
+	router.HandleFunc("/courses/{id}", getOneCourse).Methods("GET")
+	router.HandleFunc("/courses/{id}", updateOneCourse).Methods("PUT")
+	router.HandleFunc("/courses/{id}", deleteOneCourse).Methods("DELETE")
+	// subRouter := router.NewRoute().Subrouter()
+	// subRouter.HandleFunc("/course", CourseHandler)
+
+	log.Print("Listening on http://localhost:3000 ...")
+	if err := http.ListenAndServe(":3000", router); err != nil {
+		log.Fatal("Fail to Start Server!!")
+	}
 
 }
