@@ -2,8 +2,14 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/vishalvx/dbconnect/model"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -25,6 +31,149 @@ func init() {
 	}
 	log.Println("Connected to DB")
 
-	connectColletion := client.Database(dbName).Collection(collectionName)
-	log.Println(connectColletion.Name() + " Connected succefully")
+	collection := client.Database(dbName).Collection(collectionName)
+	log.Println(collection.Name() + " Connected successfully")
+}
+
+func insertOneMovie(movie model.Netflix) {
+
+	inserted, err := collection.InsertOne(context.Background(), movie)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Movie inserted with id of ", inserted.InsertedID)
+}
+
+func updateOneMovie(movieId string) {
+	id, _err := primitive.ObjectIDFromHex(movieId)
+	if _err != nil {
+		log.Fatal("Error fail to convert string into object id: ", _err)
+	}
+
+	filter := bson.M{"_id": id}
+	updates := bson.M{"$set": bson.M{"watched": true}}
+
+	updated, _err := collection.UpdateOne(context.Background(), filter, updates)
+
+	if _err != nil {
+		log.Fatal(_err)
+	}
+	log.Print("update watched to true", updated.ModifiedCount)
+
+}
+
+func deleteOneMovie(movieId string) {
+	id, _err := primitive.ObjectIDFromHex(movieId)
+	if _err != nil {
+		log.Fatal("Error fail to convert string into object id: ", _err)
+	}
+
+	filter := bson.M{"_id": id}
+
+	deleteResult, err := collection.DeleteOne(context.Background(), filter)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("delete count: ", deleteResult.DeletedCount)
+
+}
+
+func deleteAllMovies() int64 {
+	deleteResult, err := collection.DeleteMany(context.Background(), bson.D{{}}, nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("delete count: ", deleteResult.DeletedCount)
+
+	return deleteResult.DeletedCount
+}
+
+func getAllMovies() []primitive.M {
+	cursor, err := collection.Find(context.Background(), bson.D{{}})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var movies []primitive.M
+
+	for cursor.Next(context.Background()) {
+		var movie bson.M
+		if err := cursor.Decode(&movie); err != nil {
+			log.Fatal(err)
+		}
+		movies = append(movies, movie)
+	}
+
+	defer cursor.Close(context.Background())
+	return movies
+}
+
+func GetAllMovies(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO - Get All Movie Endpoint Hit ---")
+
+	res.Header().Set("Content-Type", "application/json")
+	allMovies := getAllMovies()
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(allMovies)
+}
+
+func CreateOneMovie(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO - Create One Movie Endpoint Hit ---")
+
+	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("Allow-Control-Allow-Methods", "POST")
+
+	var movie model.Netflix
+	_ = json.NewDecoder(req.Body).Decode(&movie)
+
+	insertOneMovie(movie)
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(movie)
+}
+
+func MarkedAsWatched(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO - Update movie to marked as watched Endpoint Hit ---")
+
+	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("Allow-Control-Allow-Methods", "PUT")
+
+	params := mux.Vars(req)
+	updateOneMovie(params["id"])
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode("update movie status to marked as read")
+}
+
+func DeleteOneMovie(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO -  Delete One Movie Endpoint Hit ---")
+
+	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("Allow-Control-Allow-Methods", "DELETE")
+
+	params := mux.Vars(req)
+	deleteOneMovie(params["id"])
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode("Delete One movie.")
+}
+
+func DeleteAllMovies(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO -  Delete All Movies Endpoint Hit ---")
+
+	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("Allow-Control-Allow-Methods", "DELETE")
+
+	deleteAllMovies()
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode("Delete All movies.")
 }
