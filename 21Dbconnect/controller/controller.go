@@ -22,16 +22,19 @@ var collection *mongo.Collection
 
 func init() {
 
-	clientOption := options.Client().ApplyURI(connectionString)
+	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	clientOption := options.Client().ApplyURI(connectionString).SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(context.TODO(), clientOption)
 
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	log.Println("Connected to DB")
 
-	collection := client.Database(dbName).Collection(collectionName)
+	collection = client.Database(dbName).Collection(collectionName)
 	log.Println(collection.Name() + " Connected successfully")
 }
 
@@ -41,6 +44,7 @@ func insertOneMovie(movie model.Netflix) {
 
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	log.Println("Movie inserted with id of ", inserted.InsertedID)
@@ -50,6 +54,7 @@ func updateOneMovie(movieId string) {
 	id, _err := primitive.ObjectIDFromHex(movieId)
 	if _err != nil {
 		log.Fatal("Error fail to convert string into object id: ", _err)
+		return
 	}
 
 	filter := bson.M{"_id": id}
@@ -59,6 +64,7 @@ func updateOneMovie(movieId string) {
 
 	if _err != nil {
 		log.Fatal(_err)
+		return
 	}
 	log.Print("update watched to true", updated.ModifiedCount)
 
@@ -68,6 +74,7 @@ func deleteOneMovie(movieId string) {
 	id, _err := primitive.ObjectIDFromHex(movieId)
 	if _err != nil {
 		log.Fatal("Error fail to convert string into object id: ", _err)
+		return
 	}
 
 	filter := bson.M{"_id": id}
@@ -76,6 +83,7 @@ func deleteOneMovie(movieId string) {
 
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	log.Println("delete count: ", deleteResult.DeletedCount)
@@ -87,6 +95,7 @@ func deleteAllMovies() int64 {
 
 	if err != nil {
 		log.Fatal(err)
+		return 0
 	}
 
 	log.Println("delete count: ", deleteResult.DeletedCount)
@@ -99,6 +108,7 @@ func getAllMovies() []primitive.M {
 
 	if err != nil {
 		log.Fatal(err)
+		return nil
 	}
 
 	var movies []primitive.M
@@ -107,6 +117,7 @@ func getAllMovies() []primitive.M {
 		var movie bson.M
 		if err := cursor.Decode(&movie); err != nil {
 			log.Fatal(err)
+			return nil
 		}
 		movies = append(movies, movie)
 	}
@@ -176,4 +187,11 @@ func DeleteAllMovies(res http.ResponseWriter, req *http.Request) {
 
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode("Delete All movies.")
+}
+
+func GetHome(res http.ResponseWriter, req *http.Request) {
+	log.Print("INFO -  Delete All Movies Endpoint Hit ---")
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode("Hello world!!!")
 }
