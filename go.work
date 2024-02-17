@@ -22,4 +22,5 @@ use (
 	./19jsons
 	./20buildapi
 	./21Dbconnect
+	./22goroutine
 )
