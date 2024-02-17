@@ -23,4 +23,5 @@ use (
 	./20buildapi
 	./21Dbconnect
 	./22goroutine
+	./23mutexAndAwaitedGroups
 )
